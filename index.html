@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fen Dedektifi</title>
+
+<style>
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: #f0ecfa;
+    color: #30234a;
+    font-family: Arial, sans-serif;
+  }
+
+  main {
+    width: 100%;
+    max-width: 600px;
+    background: white;
+    padding: 36px;
+    border-radius: 24px;
+    box-shadow: 0 15px 45px #30234a18;
+    text-align: center;
+  }
+
+  .simge { font-size: 52px; }
+  h1 { margin-bottom: 8px; }
+  .alt { color: #736783; line-height: 1.6; }
+
+  progress {
+    width: 100%;
+    height: 14px;
+    margin-top: 20px;
+    accent-color: #7950b5;
+  }
+
+  #ifade {
+    min-height: 100px;
+    display: grid;
+    place-items: center;
+    font-size: 24px;
+    line-height: 1.5;
+    margin: 24px 0;
+  }
+
+  .cevaplar {
+    display: flex;
+    gap: 12px;
+  }
+
+  button {
+    font: inherit;
+    font-weight: bold;
+    padding: 16px;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+  }
+
+  .cevaplar button { flex: 1; }
+  #dogru { background: #d8f5e5; color: #176540; }
+  #yanlis { background: #ffe0e6; color: #a32245; }
+
+  button:hover:not(:disabled) { filter: brightness(.95); }
+  button:disabled { opacity: .55; cursor: default; }
+  button:focus-visible {
+    outline: 3px solid #7950b5;
+    outline-offset: 4px;
+  }
+
+  #aciklama {
+    min-height: 80px;
+    line-height: 1.7;
+  }
+
+  #devam {
+    background: #7950b5;
+    color: white;
+    width: 100%;
+  }
+
+  [hidden] { display: none !important; }
+</style>
+</head>
+
+<body>
+<main>
+  <div class="simge">🔎</div>
+  <h1>Fen Dedektifi</h1>
+  <p class="alt">Bilgiyi incele, kararını ver!</p>
+
+  <progress id="cubuk" value="0" max="5"
+            aria-label="Tamamlanan soru sayısı"></progress>
+
+  <p id="durum"></p>
+  <h2 id="ifade"></h2>
+
+  <div class="cevaplar" id="cevaplar">
+    <button id="dogru">✓ Doğru</button>
+    <button id="yanlis">✕ Yanlış</button>
+  </div>
+
+  <p id="aciklama" aria-live="polite"></p>
+  <button id="devam" hidden>Devam et →</button>
+</main>
+
+<script>
+const sorular = [
+  {
+    ifade: "Ay, kendi ışığını üretir.",
+    cevap: false,
+    bilgi: "Ay kendi ışığını üretmez. Güneş’ten aldığı ışığı yansıtır."
+  },
+  {
+    ifade: "Buharlaşma yalnızca kaynama sıcaklığında gerçekleşir.",
+    cevap: false,
+    bilgi: "Buharlaşma farklı sıcaklıklarda gerçekleşebilir. Islak çamaşırların kuruması buna örnektir."
+  },
+  {
+    ifade: "Kuvvet, bir cismin hareket yönünü değiştirebilir.",
+    cevap: true,
+    bilgi: "Kuvvet; cismin hızını, hareket yönünü veya şeklini değiştirebilir."
+  },
+  {
+    ifade: "Basit bir elektrik devresinde plastik, bakırdan daha iyi iletkendir.",
+    cevap: false,
+    bilgi: "Bakır iyi bir elektrik iletkenidir. Plastik ise normal koşullarda yalıtkan olarak kullanılır."
+  },
+  {
+    ifade: "Dünya’nın kendi ekseni etrafında dönmesi gece ve gündüzü oluşturur.",
+    cevap: true,
+    bilgi: "Dünya dönerken Güneş’e dönük tarafında gündüz, diğer tarafında gece yaşanır."
+  }
+];
+
+let sira = 0;
+let puan = 0;
+let cevaplandi = false;
+
+const ifade = document.getElementById("ifade");
+const durum = document.getElementById("durum");
+const aciklama = document.getElementById("aciklama");
+const cubuk = document.getElementById("cubuk");
+const dogru = document.getElementById("dogru");
+const yanlis = document.getElementById("yanlis");
+const devam = document.getElementById("devam");
+const cevaplar = document.getElementById("cevaplar");
+
+cubuk.max = sorular.length;
+
+function soruyuGoster() {
+  cevaplandi = false;
+  durum.textContent = `Soru ${sira + 1} / ${sorular.length}`;
+  ifade.textContent = sorular[sira].ifade;
+  aciklama.textContent = "";
+  dogru.disabled = false;
+  yanlis.disabled = false;
+  devam.hidden = true;
+  cubuk.value = sira;
+}
+
+function cevapVer(secim) {
+  if (cevaplandi) return;
+  cevaplandi = true;
+
+  dogru.disabled = true;
+  yanlis.disabled = true;
+
+  const soru = sorular[sira];
+  const bildi = secim === soru.cevap;
+
+  if (bildi) puan++;
+
+  aciklama.textContent =
+    (bildi ? "✅ Doğru bildin! " : "💡 Bu kez olmadı. ") + soru.bilgi;
+
+  cubuk.value = sira + 1;
+  devam.textContent =
+    sira === sorular.length - 1 ? "Sonucu gör →" : "Devam et →";
+  devam.hidden = false;
+}
+
+dogru.onclick = () => cevapVer(true);
+yanlis.onclick = () => cevapVer(false);
+
+devam.onclick = () => {
+  sira++;
+
+  if (sira < sorular.length) {
+    soruyuGoster();
+    return;
+  }
+
+  durum.textContent = "Araştırma tamamlandı!";
+  ifade.textContent = `${sorular.length} sorudan ${puan} doğru 🎉`;
+  cevaplar.hidden = true;
+
+  aciklama.textContent =
+    puan === sorular.length
+      ? "Tebrikler, bütün ifadeleri doğru değerlendirdin!"
+      : "Açıklamaları düşünerek bir kez daha deneyebilirsin.";
+
+  devam.textContent = "Yeniden başla";
+  devam.onclick = () => location.reload();
+};
+
+soruyuGoster();
+</script>
+</body>
+</html>
